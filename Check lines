@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(CheckLinesApp());
+}
+
+class CheckLinesApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Check Lines',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: GamePage(),
+    );
+  }
+}
+
+class GamePage extends StatefulWidget {
+  @override
+  _GamePageState createState() => _GamePageState();
+}
+
+class _GamePageState extends State<GamePage> {
+  final int gridSize = 5;
+  late List<List<Color>> grid;
+  int currentPlayer = 1; // 1 for Player 1, 2 for Player 2
+  static const Color player1Color = Colors.blue;
+  static const Color player2Color = Colors.red;
+
+  @override
+  void initState() {
+    super.initState();
+    grid = List.generate(gridSize, (i) => List.filled(gridSize, Colors.grey));
+  }
+
+  void _onTileTap(int row, int col) {
+    if (grid[row][col] == Colors.grey) {
+      setState(() {
+        grid[row][col] = currentPlayer == 1 ? player1Color : player2Color;
+
+        if (_checkWinCondition(row, col)) {
+          _showWinnerDialog(currentPlayer);
+        } else {
+          currentPlayer = (currentPlayer == 1) ? 2 : 1; // Switch player
+        }
+      });
+    }
+  }
+
+  bool _checkWinCondition(int row, int col) {
+    Color colorToCheck = grid[row][col];
+    return (_checkDirection(row, col, colorToCheck, 1, 0) + // Horizontal
+            _checkDirection(row, col, colorToCheck, 0, 1) + // Vertical
+            _checkDirection(row, col, colorToCheck, 1, 1) + // Diagonal \
+            _checkDirection(row, col, colorToCheck, 1, -1) >= // Diagonal /
+            4);
+  }
+
+  int _checkDirection(int row, int col, Color color, int rowStep, int colStep) {
+    int count = 0;
+
+    for (int i = 1; i < 5; i++) {
+      int newRow = row + i * rowStep;
+      int newCol = col + i * colStep;
+      if (newRow < gridSize && newCol < gridSize && newRow >= 0 && newCol >= 0 && grid[newRow][newCol] == color) {
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    for (int i = 1; i < 5; i++) {
+      int newRow = row - i * rowStep;
+      int newCol = col - i * colStep;
+      if (newRow < gridSize && newCol < gridSize && newRow >= 0 && newCol >= 0 && grid[newRow][newCol] == color) {
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    return count;
+  }
+
+  void _showWinnerDialog(int player) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Player $player Wins!'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetGame();
+              },
+              child: Text('Play Again'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _resetGame() {
+    setState(() {
+      grid = List.generate(gridSize, (i) => List.filled(gridSize, Colors.grey));
+      currentPlayer = 1;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Check Lines - Player $currentPlayer\'s Turn'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: gridSize,
+              ),
+              itemCount: gridSize * gridSize,
+              itemBuilder: (context, index) {
+                int row = index ~/ gridSize;
+                int col = index % gridSize;
+                return GestureDetector(
+                  onTap: () => _onTileTap(row, col),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: grid[row][col],
+                      border: Border.all(color: Colors.black),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
